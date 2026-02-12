@@ -68,7 +68,3 @@ ux4g_mcp/
 ├── ux4g_2.0.8/           # UX4G design system assets
 └── requirements.txt       # Python dependencies
 ```
-
-## License
-
-MIT
