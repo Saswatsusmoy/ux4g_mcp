@@ -1,0 +1,1 @@
+"""Curated component metadata."""

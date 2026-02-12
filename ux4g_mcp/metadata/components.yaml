@@ -1,0 +1,355 @@
+components:
+  - id: button
+    name: Button
+    category: component
+    description: UX4G button component with multiple variants and sizes
+    tags: [form, action, interactive]
+    requires_js: false
+    required_classes: [btn]
+    variants:
+      - name: primary
+        class_list: [btn, btn-primary]
+        description: Primary action button
+      - name: secondary
+        class_list: [btn, btn-secondary]
+        description: Secondary action button
+      - name: success
+        class_list: [btn, btn-success]
+        description: Success action button
+      - name: danger
+        class_list: [btn, btn-danger]
+        description: Danger/delete action button
+      - name: warning
+        class_list: [btn, btn-warning]
+        description: Warning action button
+      - name: info
+        class_list: [btn, btn-info]
+        description: Info action button
+      - name: outline-primary
+        class_list: [btn, btn-outline-primary]
+        description: Outlined primary button
+      - name: outline-secondary
+        class_list: [btn, btn-outline-secondary]
+        description: Outlined secondary button
+      - name: link
+        class_list: [btn, btn-link]
+        description: Link-styled button
+    default_markup_skeleton: |
+      <button type="button" class="btn btn-primary">Button</button>
+    supported_frameworks: [html, react]
+
+  - id: card
+    name: Card
+    category: component
+    description: Card component for displaying content in a contained box
+    tags: [layout, content, container]
+    requires_js: false
+    required_classes: [card]
+    variants:
+      - name: default
+        class_list: [card]
+        description: Basic card
+      - name: with-header
+        class_list: [card, card-header]
+        description: Card with header section
+      - name: with-footer
+        class_list: [card, card-footer]
+        description: Card with footer section
+    default_markup_skeleton: |
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Card title</h5>
+          <p class="card-text">Card content</p>
+        </div>
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: modal
+    name: Modal
+    category: component
+    description: Modal dialog component for overlays and dialogs
+    tags: [dialog, overlay, interactive]
+    requires_js: true
+    required_classes: [modal]
+    required_attributes:
+      data-bs-toggle: modal
+    aria_roles: [dialog]
+    js_initialization: "new Modal(element)"
+    dependencies: [ux4g.bundle.js]
+    default_markup_skeleton: |
+      <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Modal body content</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: alert
+    name: Alert
+    category: component
+    description: Alert component for displaying messages and notifications
+    tags: [notification, message, feedback]
+    requires_js: false
+    required_classes: [alert]
+    variants:
+      - name: primary
+        class_list: [alert, alert-primary]
+      - name: success
+        class_list: [alert, alert-success]
+      - name: danger
+        class_list: [alert, alert-danger]
+      - name: warning
+        class_list: [alert, alert-warning]
+      - name: info
+        class_list: [alert, alert-info]
+    default_markup_skeleton: |
+      <div class="alert alert-primary" role="alert">
+        Alert message
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: badge
+    name: Badge
+    category: component
+    description: Badge component for labels and counts
+    tags: [label, indicator]
+    requires_js: false
+    required_classes: [badge]
+    variants:
+      - name: primary
+        class_list: [badge, bg-primary]
+      - name: secondary
+        class_list: [badge, bg-secondary]
+      - name: success
+        class_list: [badge, bg-success]
+      - name: danger
+        class_list: [badge, bg-danger]
+    default_markup_skeleton: |
+      <span class="badge bg-primary">Badge</span>
+    supported_frameworks: [html, react]
+
+  - id: form
+    name: Form
+    category: form
+    description: Form components including inputs, selects, checkboxes, and radio buttons
+    tags: [form, input, interactive]
+    requires_js: false
+    required_classes: [form-control]
+    variants:
+      - name: input
+        class_list: [form-control]
+      - name: select
+        class_list: [form-select]
+      - name: checkbox
+        class_list: [form-check-input]
+      - name: radio
+        class_list: [form-check-input]
+    default_markup_skeleton: |
+      <div class="mb-3">
+        <label for="exampleInput" class="form-label">Label</label>
+        <input type="text" class="form-control" id="exampleInput">
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: table
+    name: Table
+    category: component
+    description: Table component for displaying tabular data
+    tags: [data, layout]
+    requires_js: false
+    required_classes: [table]
+    variants:
+      - name: default
+        class_list: [table]
+      - name: striped
+        class_list: [table, table-striped]
+      - name: bordered
+        class_list: [table, table-bordered]
+      - name: hover
+        class_list: [table, table-hover]
+    default_markup_skeleton: |
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Header</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">1</th>
+            <td>Data</td>
+          </tr>
+        </tbody>
+      </table>
+    supported_frameworks: [html, react]
+
+  - id: nav
+    name: Navigation
+    category: navigation
+    description: Navigation components including navbars, tabs, and breadcrumbs
+    tags: [navigation, menu]
+    requires_js: false
+    required_classes: [nav]
+    variants:
+      - name: tabs
+        class_list: [nav, nav-tabs]
+      - name: pills
+        class_list: [nav, nav-pills]
+      - name: navbar
+        class_list: [navbar]
+    default_markup_skeleton: |
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="#">Active</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+      </ul>
+    supported_frameworks: [html, react]
+
+  - id: dropdown
+    name: Dropdown
+    category: component
+    description: Dropdown menu component
+    tags: [menu, interactive]
+    requires_js: true
+    required_classes: [dropdown]
+    required_attributes:
+      data-bs-toggle: dropdown
+    js_initialization: "new Dropdown(element)"
+    dependencies: [ux4g.bundle.js]
+    default_markup_skeleton: |
+      <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Dropdown button
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="#">Action</a></li>
+          <li><a class="dropdown-item" href="#">Another action</a></li>
+        </ul>
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: carousel
+    name: Carousel
+    category: component
+    description: Carousel component for image/content slideshows
+    tags: [slideshow, media, interactive]
+    requires_js: true
+    required_classes: [carousel]
+    required_attributes:
+      data-bs-ride: carousel
+    js_initialization: "new Carousel(element)"
+    dependencies: [ux4g.bundle.js]
+    default_markup_skeleton: |
+      <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="carousel-caption">Slide 1</div>
+          </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </button>
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: toast
+    name: Toast
+    category: component
+    description: Toast notification component
+    tags: [notification, message]
+    requires_js: true
+    required_classes: [toast]
+    js_initialization: "new Toast(element)"
+    dependencies: [ux4g.bundle.js]
+    default_markup_skeleton: |
+      <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <strong class="me-auto">Toast</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">Toast message</div>
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: progress
+    name: Progress
+    category: component
+    description: Progress bar component
+    tags: [indicator, feedback]
+    requires_js: false
+    required_classes: [progress]
+    default_markup_skeleton: |
+      <div class="progress">
+        <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: spinner
+    name: Spinner
+    category: component
+    description: Loading spinner component
+    tags: [loading, indicator]
+    requires_js: false
+    required_classes: [spinner-border]
+    variants:
+      - name: border
+        class_list: [spinner-border]
+      - name: grow
+        class_list: [spinner-grow]
+    default_markup_skeleton: |
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: container
+    name: Container
+    category: layout
+    description: Container component for responsive layouts
+    tags: [layout, responsive]
+    requires_js: false
+    required_classes: [container]
+    variants:
+      - name: default
+        class_list: [container]
+      - name: fluid
+        class_list: [container-fluid]
+    default_markup_skeleton: |
+      <div class="container">
+        Content
+      </div>
+    supported_frameworks: [html, react]
+
+  - id: grid
+    name: Grid
+    category: layout
+    description: Grid system for responsive layouts
+    tags: [layout, responsive, grid]
+    requires_js: false
+    required_classes: [row, col]
+    dependencies: [ux4g-grid.css]
+    default_markup_skeleton: |
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6">Column 1</div>
+          <div class="col-md-6">Column 2</div>
+        </div>
+      </div>
+    supported_frameworks: [html, react]

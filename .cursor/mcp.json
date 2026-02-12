@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ux4g": {
+      "command": "venv/bin/python",
+      "args": ["-m", "ux4g_mcp"],
+      "cwd": "."
+    }
+  }
+}
