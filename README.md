@@ -1,70 +1,101 @@
 # UX4G MCP Server
 
-An MCP (Model Context Protocol) server that provides comprehensive access to the UX4G design system, enabling AI code editors (Claude, Cursor, etc.) to generate UX4G-compliant UI components without manual reference to documentation.
+A Model Context Protocol (MCP) server that exposes UX4G design-system knowledge and component metadata to MCP-compatible clients (for example, Cursor and Claude Desktop).
 
-## Features
+## Overview
 
-- **Component Discovery**: List and query UX4G components with filtering
-- **Code Generation**: Generate HTML/React code from natural language descriptions
-- **Code Refinement**: Refine existing UX4G code based on change requests
-- **Validation**: Validate code against UX4G design system rules
-- **Design Tokens**: Access colors, spacing, typography, and breakpoint tokens
-- **Framework Support**: Generate both plain HTML and React JSX
+This project enables AI-assisted UI development against UX4G conventions by providing tools for:
+
+- Discovering available components and their metadata
+- Retrieving implementation payloads for selected components (HTML/React/CSS/JS)
+- Looking up UX4G handbook-aligned best practices
+- Verifying installed UX4G asset/version information
+
+## Repository Layout
+
+```text
+ux4g_mcp/
+|-- ux4g_mcp/
+|   |-- __main__.py         # Module entrypoint (`python -m ux4g_mcp`)
+|   |-- server.py           # MCP server implementation
+|   |-- config.py           # Runtime configuration
+|   |-- tools/              # MCP tool handlers
+|   |-- registry/           # Component registry + extraction logic
+|   |-- metadata/           # Curated component metadata
+|   `-- services/           # Supporting service layer
+|-- ux4g_2.0.8/             # UX4G assets (default asset root)
+|-- requirements.txt
+|-- setup.py
+`-- SETUP.md                # Client integration and troubleshooting
+```
+
+## Requirements
+
+- Python 3.8+
+- UX4G assets available locally (default: `ux4g_2.0.8/`)
+- Dependencies from `requirements.txt`
 
 ## Installation
 
-1. Install dependencies:
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Ensure UX4G assets are in the `ux4g_2.0.8/` directory (already included)
+## Running the Server
 
-## Usage
+Use module execution (required for correct package-relative imports):
 
-### Running the MCP Server
+```bash
+python -m ux4g_mcp
+```
+
+Equivalent alternatives:
 
 ```bash
 python -m ux4g_mcp.server
+ux4g-mcp
 ```
 
-### MCP Tools
+## Exposed MCP Tools
 
-The server exposes the following tools:
+The server currently advertises the following tools:
 
-- `ux4g.get_version` - Get UX4G version and asset information
-- `ux4g.list_components` - List available components with optional filtering
-- `ux4g.get_component` - Get detailed component information and markup
-- `ux4g.generate_snippet` - Generate code from natural language description
-- `ux4g.refine_snippet` - Refine existing code based on change request
-- `ux4g.validate_snippet` - Validate code against UX4G rules
-- `ux4g.list_tokens` - List design tokens (colors, spacing, typography, breakpoints)
+- `get_version`: Returns UX4G version and asset-root information
+- `get_bestpractices`: Returns UX4G handbook-backed best practices, optionally filtered by query
+- `list_components`: Returns component catalog entries with filters (category, tag, JS requirement, type)
+- `use_component`: Returns structured component payloads for selected `component_ids`
 
-### Configuration
+## Configuration
 
-Set environment variables to customize behavior:
+Environment variables:
 
-- `UX4G_ASSET_ROOT` - Path to UX4G assets (default: `ux4g_2.0.8/`)
-- `UX4G_DEFAULT_FRAMEWORK` - Default output framework: `html` or `react` (default: `html`)
+- `UX4G_ASSET_ROOT`: Path to UX4G assets (default: `ux4g_2.0.8/`)
+- `UX4G_DEFAULT_FRAMEWORK`: Preferred framework for generated payloads (`html` or `react`, default: `html`)
 
-## Architecture
+Example:
 
-- **Registry Layer**: Parses CSS/JS files and loads curated component metadata
-- **Generation Layer**: Converts natural language to UX4G-compliant code
-- **Validation Layer**: Validates code against design system rules
-- **Template System**: Provides canonical markup skeletons for components
-
-## Project Structure
-
+```bash
+export UX4G_ASSET_ROOT="/absolute/path/to/ux4g_2.0.8"
+export UX4G_DEFAULT_FRAMEWORK="react"
+python -m ux4g_mcp
 ```
-ux4g_mcp/
-├── ux4g_mcp/
-│   ├── server.py          # MCP server entrypoint
-│   ├── config.py          # Configuration
-│   ├── registry/          # Component registry and parsing
-│   ├── tools/             # MCP tool implementations
-│   ├── generator/         # Code generation logic
-│   └── metadata/          # Curated component definitions
-├── ux4g_2.0.8/           # UX4G design system assets
-└── requirements.txt       # Python dependencies
+
+## Development
+
+Install editable package mode:
+
+```bash
+pip install -e .
 ```
+
+Run quick import health check:
+
+```bash
+python -c "from ux4g_mcp.server import main; print('Server import OK')"
+```
+
+## Troubleshooting
+
+For client wiring and MCP configuration details, see `SETUP.md`.

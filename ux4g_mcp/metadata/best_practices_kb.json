@@ -1,0 +1,104 @@
+{
+  "source": {
+    "title": "UX4G Handbook",
+    "url": "https://www.ux4g.gov.in/assets/img/pdf/UX4G-Handbook.pdf"
+  },
+  "practices": [
+    {
+      "id": "ux4g-bp-001",
+      "topic": "adopt-design-system",
+      "title": "Use UX4G as the single source of UI truth",
+      "guidance": "Build interfaces using UX4G components and utility conventions instead of creating one-off custom patterns for common UI needs.",
+      "keywords": ["design system", "consistency", "governance", "reusability"],
+      "priority": "high"
+    },
+    {
+      "id": "ux4g-bp-002",
+      "topic": "consistency",
+      "title": "Maintain visual and interaction consistency",
+      "guidance": "Keep spacing, component behavior, and layout structure consistent across screens to reduce cognitive load.",
+      "keywords": ["consistency", "spacing", "layout", "predictability"],
+      "priority": "high"
+    },
+    {
+      "id": "ux4g-bp-003",
+      "topic": "accessibility",
+      "title": "Design and build for accessibility first",
+      "guidance": "Ensure proper semantics, keyboard operability, visible focus states, and sufficient color contrast in every component implementation.",
+      "keywords": ["a11y", "accessibility", "contrast", "keyboard", "semantic html"],
+      "priority": "high"
+    },
+    {
+      "id": "ux4g-bp-004",
+      "topic": "mobile-first",
+      "title": "Follow a mobile-first responsive approach",
+      "guidance": "Start with small-screen layouts and progressively enhance for larger breakpoints using UX4G grid and utility classes.",
+      "keywords": ["responsive", "mobile", "grid", "breakpoint"],
+      "priority": "high"
+    },
+    {
+      "id": "ux4g-bp-005",
+      "topic": "content-clarity",
+      "title": "Use clear content hierarchy",
+      "guidance": "Prioritize key actions and information, use meaningful headings, and keep labels and helper text concise and task-oriented.",
+      "keywords": ["content", "hierarchy", "labels", "headings"],
+      "priority": "medium"
+    },
+    {
+      "id": "ux4g-bp-006",
+      "topic": "forms",
+      "title": "Design forms for completion speed and accuracy",
+      "guidance": "Group related fields, keep validations explicit, provide actionable error messages, and minimize unnecessary inputs.",
+      "keywords": ["forms", "validation", "errors", "input"],
+      "priority": "high"
+    },
+    {
+      "id": "ux4g-bp-007",
+      "topic": "feedback",
+      "title": "Provide timely system feedback",
+      "guidance": "Always provide status or result feedback for user actions using alerts, loaders, progress indicators, and confirmation states.",
+      "keywords": ["feedback", "alerts", "loading", "status"],
+      "priority": "high"
+    },
+    {
+      "id": "ux4g-bp-008",
+      "topic": "navigation",
+      "title": "Keep navigation structure predictable",
+      "guidance": "Use familiar navigation patterns, preserve orientation with active states and breadcrumbs, and avoid deep, inconsistent branching.",
+      "keywords": ["navigation", "menu", "information architecture", "breadcrumbs"],
+      "priority": "medium"
+    },
+    {
+      "id": "ux4g-bp-009",
+      "topic": "performance",
+      "title": "Optimize page performance",
+      "guidance": "Prefer lean component composition, avoid unnecessary JavaScript dependencies, and load only the required UX4G assets.",
+      "keywords": ["performance", "assets", "javascript", "optimization"],
+      "priority": "high"
+    },
+    {
+      "id": "ux4g-bp-010",
+      "topic": "component-reuse",
+      "title": "Reuse canonical components before extending",
+      "guidance": "Choose existing UX4G components first and extend only when there is a validated product requirement that cannot be met by available patterns.",
+      "keywords": ["reuse", "components", "extension", "patterns"],
+      "priority": "high"
+    },
+    {
+      "id": "ux4g-bp-011",
+      "topic": "validation",
+      "title": "Validate against UX4G conventions",
+      "guidance": "Review class usage, required attributes, and expected behavior to ensure implementations remain compliant with the design system.",
+      "keywords": ["validation", "compliance", "classes", "attributes"],
+      "priority": "medium"
+    },
+    {
+      "id": "ux4g-bp-012",
+      "topic": "inclusion",
+      "title": "Design for inclusive public-facing services",
+      "guidance": "Use plain language, support diverse user capabilities, and reduce friction for first-time and low-digital-literacy users.",
+      "keywords": ["inclusive", "public services", "plain language", "usability"],
+      "priority": "medium"
+    }
+  ]
+}
