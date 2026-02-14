@@ -28,6 +28,13 @@ pip install -r requirements.txt
 python -m ux4g_mcp.server
 ```
 
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
 ### MCP Tools
 
 The server exposes the following tools:
