@@ -68,6 +68,19 @@ After saving MCP config:
    - `ux4g_get_bestpractices`
    - `ux4g_list_components`
    - `ux4g_use_component`
+   - `ux4g_list_tokens`
+   - `ux4g_validate_snippet`
+   - `ux4g_generate_snippet`
+   - `ux4g_refine_snippet`
+
+## 5. Run Tests (Optional)
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Note: Tests import the local package directly from the repo root; an editable install is not required.
 
 ## Troubleshooting
 

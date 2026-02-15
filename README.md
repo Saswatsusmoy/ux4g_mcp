@@ -58,6 +58,14 @@ python -m ux4g_mcp.server
 ux4g-mcp
 ```
 
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+### MCP Tools
 ## Exposed MCP Tools
 
 The server currently advertises the following tools:
@@ -66,6 +74,10 @@ The server currently advertises the following tools:
 - `get_bestpractices`: Returns UX4G handbook-backed best practices, optionally filtered by query
 - `list_components`: Returns component catalog entries with filters (category, tag, JS requirement, type)
 - `use_component`: Returns structured component payloads for selected `component_ids`
+- `list_tokens`: Returns design tokens (colors, spacing, typography, breakpoints), optionally filtered by type
+- `validate_snippet`: Validates HTML/React snippets against UX4G component and accessibility rules
+- `generate_snippet`: Generates UX4G-compliant snippets from natural language descriptions
+- `refine_snippet`: Refines existing UX4G snippets based on a change request
 
 ## Configuration
 
