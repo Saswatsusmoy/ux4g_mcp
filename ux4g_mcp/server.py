@@ -1,4 +1,5 @@
 """Main MCP server entrypoint for UX4G design system."""
+
 import asyncio
 from typing import Any
 
@@ -8,10 +9,14 @@ from mcp.server.lowlevel import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 
 from .tools import (
-    list_components_tool,
-    use_component_tool,
+    generate_snippet_tool,
     get_bestpractices_tool,
     get_version_tool,
+    list_components_tool,
+    list_tokens_tool,
+    refine_snippet_tool,
+    use_component_tool,
+    validate_snippet_tool,
 )
 
 # Initialize MCP server
@@ -100,16 +105,103 @@ async def handle_list_tools() -> list[types.Tool]:
                         "type": "boolean",
                         "description": "Include component JS init/constructor code when available.",
                         "default": True,
-                    }
+                    },
                 },
                 "required": ["component_ids"],
+            },
+        ),
+        types.Tool(
+            name="list_tokens",
+            description="List UX4G design tokens such as colors, spacing, typography, and breakpoints.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "token_type": {
+                        "type": "string",
+                        "description": "Filter by token type (e.g., 'color', 'spacing', 'typography', 'breakpoint', 'radius', 'other', 'all').",
+                        "default": "all",
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="validate_snippet",
+            description="Validate UX4G HTML/React snippets against design-system rules.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "HTML or React JSX code to validate.",
+                    },
+                    "framework": {
+                        "type": "string",
+                        "enum": ["html", "react"],
+                        "description": "Optional framework override (auto-detected if omitted).",
+                    },
+                },
+                "required": ["code"],
+            },
+        ),
+        types.Tool(
+            name="generate_snippet",
+            description="Generate UX4G-compliant code from a natural language description.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string",
+                        "description": "Natural language description of the desired UI.",
+                    },
+                    "framework": {
+                        "type": "string",
+                        "enum": ["html", "react"],
+                        "description": "Preferred output framework.",
+                        "default": "html",
+                    },
+                    "page_context": {
+                        "type": "object",
+                        "description": "Optional layout/context hints to guide generation.",
+                    },
+                    "validation_level": {
+                        "type": "string",
+                        "description": "Validation strictness (e.g., 'relaxed').",
+                        "default": "relaxed",
+                    },
+                },
+                "required": ["description"],
+            },
+        ),
+        types.Tool(
+            name="refine_snippet",
+            description="Refine existing UX4G code based on a natural language change request.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "existing_code": {
+                        "type": "string",
+                        "description": "Current HTML or React JSX snippet.",
+                    },
+                    "change_request": {
+                        "type": "string",
+                        "description": "Requested changes to apply.",
+                    },
+                    "framework": {
+                        "type": "string",
+                        "enum": ["html", "react"],
+                        "description": "Optional framework override (auto-detected if omitted).",
+                    },
+                },
+                "required": ["existing_code", "change_request"],
             },
         ),
     ]
 
 
 @server.call_tool()
-async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[types.TextContent]:
+async def handle_call_tool(
+    name: str, arguments: dict[str, Any]
+) -> list[types.TextContent]:
     """Handle tool calls."""
     try:
         if name == "get_version":
@@ -120,6 +212,14 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[types.T
             result = await list_components_tool(arguments)
         elif name == "use_component":
             result = await use_component_tool(arguments)
+        elif name == "list_tokens":
+            result = await list_tokens_tool(arguments)
+        elif name == "validate_snippet":
+            result = await validate_snippet_tool(arguments)
+        elif name == "generate_snippet":
+            result = await generate_snippet_tool(arguments)
+        elif name == "refine_snippet":
+            result = await refine_snippet_tool(arguments)
         else:
             return [
                 types.TextContent(
