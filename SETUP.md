@@ -1,63 +1,103 @@
-# UX4G MCP Server Setup
+# UX4G MCP Server Setup Guide
 
-## Quick Setup
+This guide covers local setup and MCP client configuration for the UX4G MCP server.
 
-Run these commands in your terminal:
+## 1. Install Dependencies
+
+From the repository root:
 
 ```bash
-cd /Users/saswatsusmoy/test/ux4g_mcp
-
-# Install dependencies using your pyenv Python
-/Users/saswatsusmoy/.pyenv/versions/3.12.9/bin/pip3 install -r requirements.txt
-
-# Verify installation
-/Users/saswatsusmoy/.pyenv/versions/3.12.9/bin/python3 -c "from ux4g_mcp.server import main; print('✓ Server ready')"
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-## Verify MCP Configuration
+Optional verification:
 
-The server **must** be run as a module (`python -m ux4g_mcp`), not by executing `server.py` directly, because it uses relative imports. Using `server.py` as the entrypoint causes connection failures in Cursor/Cursor CLI.
+```bash
+python -c "from ux4g_mcp.server import main; print('Server ready')"
+```
 
-**Cursor IDE & Cursor CLI** both read MCP config from:
+## 2. Verify Local Server Startup
 
-- **Global:** `~/.cursor/mcp.json`
-- **Project (when this repo is the workspace):** `.cursor/mcp.json` in this repo (already included)
+Run the server with module execution:
 
-Your global Cursor MCP config (`~/.cursor/mcp.json`) should have:
+```bash
+python -m ux4g_mcp
+```
+
+Important:
+
+- Use `python -m ux4g_mcp` (or `python -m ux4g_mcp.server`)
+- Do not run `ux4g_mcp/server.py` directly; relative imports can fail in that mode
+
+## 3. Configure MCP Client (Cursor Example)
+
+Cursor reads MCP configuration from:
+
+- Global config: `~/.cursor/mcp.json`
+- Workspace config: `.cursor/mcp.json` (when this repo is opened as the workspace)
+
+Example configuration:
 
 ```json
 {
   "mcpServers": {
     "ux4g": {
-      "command": "/path/to/python",
+      "command": "/absolute/path/to/python",
       "args": ["-m", "ux4g_mcp"],
-      "cwd": "/path/to/ux4g_mcp"
+      "cwd": "/absolute/path/to/ux4g_mcp"
     }
   }
 }
 ```
 
-Use the **full path** to the Python that has the project dependencies (e.g. `venv/bin/python` or your pyenv/python3), and set `cwd` to the repo root (the folder containing `ux4g_mcp/` and `requirements.txt`). Do **not** use `args`: `[".../server.py"]` — that will fail in Cursor.
+Configuration requirements:
 
-## After Setup
+- `command` must point to the Python interpreter with installed dependencies
+- `args` must be `["-m", "ux4g_mcp"]`
+- `cwd` must be the repository root containing `requirements.txt` and `ux4g_mcp/`
 
-1. **Restart Cursor completely** (quit and reopen)
-2. The UX4G MCP tools should appear:
+## 4. Restart Client and Confirm Tools
+
+After saving MCP config:
+
+1. Fully restart the client (quit and reopen)
+2. Confirm the following tools are available:
    - `ux4g_get_version`
+   - `ux4g_get_bestpractices`
    - `ux4g_list_components`
-   - `ux4g_get_component`
-   - `ux4g_generate_snippet`
-   - `ux4g_refine_snippet`
-   - `ux4g_validate_snippet`
-   - `ux4g_list_tokens`
+   - `ux4g_use_component`
 
 ## Troubleshooting
 
-If you see `ModuleNotFoundError` or Cursor/Cursor CLI can't connect:
-- Run the server as a module: `args` must be `["-m", "ux4g_mcp"]`, not a path to `server.py`.
-- Ensure dependencies are installed: `pip3 install -r requirements.txt` (in the repo root or in your venv).
-- Ensure `cwd` in the config is the repo root (folder that contains `ux4g_mcp/`).
+### `ModuleNotFoundError` or MCP connection failure
 
-If you see Pydantic errors:
-- Ensure Pydantic v2 is installed: `pip3 install "pydantic>=2,<3"`
-- Reinstall MCP SDK: `pip3 install --upgrade mcp`
+- Confirm module mode: `args` must use `-m ux4g_mcp`
+- Confirm dependencies are installed in the interpreter used by `command`
+- Confirm `cwd` points to repository root
+
+### Pydantic-related import/runtime errors
+
+```bash
+pip install "pydantic>=2,<3"
+pip install --upgrade mcp
+```
+
+### Assets not found
+
+- Confirm UX4G assets exist at `ux4g_2.0.8/`
+- Or set `UX4G_ASSET_ROOT` to the correct absolute path
+
+## Diagnostic Commands
+
+```bash
+# Confirm interpreter path
+which python
+
+# Confirm package versions
+python -c "import mcp, pydantic; print('mcp OK, pydantic', pydantic.__version__)"
+
+# Smoke test module import
+python -c "import ux4g_mcp; print('ux4g_mcp import OK')"
+```
