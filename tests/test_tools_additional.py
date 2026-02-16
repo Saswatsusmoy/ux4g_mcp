@@ -49,6 +49,25 @@ def test_generate_snippet_tool_shape():
     assert "notes" in data
 
 
+def test_generate_snippet_tool_cancel_button_keeps_button_tag():
+    result = asyncio.run(generate_snippet_tool({"description": "cancel button"}))
+    data = json.loads(result)
+
+    code = data["code"]
+    assert "<button" in code
+    assert "<cancel" not in code
+    assert ">Cancel<" in code
+
+
+def test_generate_snippet_tool_submit_button_sets_button_type():
+    result = asyncio.run(generate_snippet_tool({"description": "submit button"}))
+    data = json.loads(result)
+
+    code = data["code"]
+    assert "<button" in code
+    assert 'type="submit"' in code
+
+
 def test_refine_snippet_tool_shape():
     existing = '<button type="button" class="btn btn-primary">Button</button>'
     result = asyncio.run(
