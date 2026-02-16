@@ -1,6 +1,8 @@
 """Generate UX4G code snippets from natural language descriptions."""
+
 import re
 from typing import Dict, List, Optional
+
 from ..registry import get_registry
 from .page_templates import PageTemplates
 
@@ -45,7 +47,7 @@ class SnippetGenerator:
             comp = comp_info["component"]
             variant = comp_info.get("variant")
             props = comp_info.get("props", {})
-            
+
             # Get canonical markup from component definition
             comp_code = self._get_component_snippet(
                 comp,
@@ -53,15 +55,17 @@ class SnippetGenerator:
                 props,
                 framework,
             )
-            
+
             code_parts.append(comp_code)
-            
-            component_details.append({
-                "id": comp.id,
-                "name": comp.name,
-                "variant": variant,
-                "markup_source": "registry",
-            })
+
+            component_details.append(
+                {
+                    "id": comp.id,
+                    "name": comp.name,
+                    "variant": variant,
+                    "markup_source": "registry",
+                }
+            )
 
         # Close container if opened
         if layout_hints.get("container"):
@@ -83,8 +87,11 @@ class SnippetGenerator:
             dependencies.update(comp.dependencies)
 
         notes = self._generate_notes(components_to_use)
-        notes.insert(0, f"Generated using {len(component_details)} component(s) from UX4G registry. Each component snippet was fetched from the canonical component definitions.")
-        
+        notes.insert(
+            0,
+            f"Generated using {len(component_details)} component(s) from UX4G registry. Each component snippet was fetched from the canonical component definitions.",
+        )
+
         return {
             "code": code,
             "components_used": component_details,
@@ -94,7 +101,14 @@ class SnippetGenerator:
 
     def _detect_page_type(self, description: str) -> Optional[str]:
         """Detect if this is a page-level request."""
-        landing_keywords = ["landing page", "homepage", "home page", "main page", "department", "government portal"]
+        landing_keywords = [
+            "landing page",
+            "homepage",
+            "home page",
+            "main page",
+            "department",
+            "government portal",
+        ]
         if any(kw in description for kw in landing_keywords):
             return "landing_page"
         return None
@@ -102,10 +116,16 @@ class SnippetGenerator:
     def _generate_page(self, page_type: str, description: str, framework: str) -> Dict:
         """Generate a full page using templates - ONLY UX4G utility classes, NO custom CSS."""
         # Extract department/entity name from description
-        dept_match = re.search(r"(?:for|of|department|ministry)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)", description, re.IGNORECASE)
+        dept_match = re.search(
+            r"(?:for|of|department|ministry)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)",
+            description,
+            re.IGNORECASE,
+        )
         dept_name = dept_match.group(1) if dept_match else "Department"
-        
-        title_match = re.search(r"(?:title|name)[:\s]+([A-Z][^\.]+)", description, re.IGNORECASE)
+
+        title_match = re.search(
+            r"(?:title|name)[:\s]+([A-Z][^\.]+)", description, re.IGNORECASE
+        )
         title = title_match.group(1).strip() if title_match else f"{dept_name} Portal"
 
         if page_type == "landing_page":
@@ -155,11 +175,13 @@ class SnippetGenerator:
                 if comp:
                     variant = self._extract_variant(description_lower, comp)
                     props = self._extract_props(description_lower, comp_id)
-                    components.append({
-                        "component": comp,
-                        "variant": variant,
-                        "props": props,
-                    })
+                    components.append(
+                        {
+                            "component": comp,
+                            "variant": variant,
+                            "props": props,
+                        }
+                    )
 
         # If no components found, default to a simple container
         if not components:
@@ -217,7 +239,9 @@ class SnippetGenerator:
 
         return props
 
-    def _extract_layout_hints(self, description: str, page_context: Optional[Dict]) -> Dict:
+    def _extract_layout_hints(
+        self, description: str, page_context: Optional[Dict]
+    ) -> Dict:
         """Extract layout hints from description and context."""
         hints = {
             "container": True,  # Default to using container
@@ -256,32 +280,78 @@ class SnippetGenerator:
         class_attr = "className" if framework == "react" else "class"
 
         if not markup.strip():
-            variant_obj = next((v for v in component.variants if v.name == variant), None) if variant else None
+            variant_obj = (
+                next((v for v in component.variants if v.name == variant), None)
+                if variant
+                else None
+            )
             if not variant_obj and component.variants:
                 variant_obj = component.variants[0]
-            classes = " ".join(variant_obj.class_list) if variant_obj else (" ".join(component.required_classes) if component.required_classes else component.id)
+            classes = (
+                " ".join(variant_obj.class_list)
+                if variant_obj
+                else (
+                    " ".join(component.required_classes)
+                    if component.required_classes
+                    else component.id
+                )
+            )
             markup = f'<div {class_attr}="{classes}">Content</div>'
 
         if props:
             if "text" in props:
-                markup = markup.replace("Button", props["text"])
-                markup = markup.replace("button", props["text"].lower())
-            if "type" in props:
-                markup = markup.replace('type="button"', f'type="{props["type"]}"')
+                markup = self._replace_first_text_node(markup, props["text"])
+            if "type" in props and re.search(r"<button\b", markup):
+                if re.search(r'\stype="[^"]*"', markup):
+                    markup = re.sub(
+                        r'\stype="[^"]*"',
+                        f' type="{props["type"]}"',
+                        markup,
+                        count=1,
+                    )
+                elif re.search(r"\stype='[^']*'", markup):
+                    markup = re.sub(
+                        r"\stype='[^']*'",
+                        f' type="{props["type"]}"',
+                        markup,
+                        count=1,
+                    )
+                else:
+                    markup = re.sub(
+                        r"<button\b",
+                        f'<button type="{props["type"]}"',
+                        markup,
+                        count=1,
+                    )
 
-        if "mb-" not in markup and "my-" not in markup and component.id in ["card", "alert", "button"]:
+        if (
+            "mb-" not in markup
+            and "my-" not in markup
+            and component.id in ["card", "alert", "button"]
+        ):
             markup = markup.replace(f'{class_attr}="', f'{class_attr}="mb-3 ', 1)
 
         return markup
 
+    def _replace_first_text_node(self, markup: str, text: str) -> str:
+        """Replace the first simple text node content without touching tag names."""
+        button_label_pattern = r">\s*(Button|button)\s*<"
+        if re.search(button_label_pattern, markup):
+            return re.sub(button_label_pattern, f">{text}<", markup, count=1)
+
+        return re.sub(r">\s*([^<>\n][^<>]*)\s*<", f">{text}<", markup, count=1)
+
     def _strip_custom_css(self, code: str) -> str:
         """Remove any custom CSS - ensure only UX4G utility classes are used."""
         import re
+
         # Remove <style> blocks
-        code = re.sub(r'<style[^>]*>.*?</style>', '', code, flags=re.DOTALL | re.IGNORECASE)
+        code = re.sub(
+            r"<style[^>]*>.*?</style>", "", code, flags=re.DOTALL | re.IGNORECASE
+        )
         # Remove inline style attributes
-        code = re.sub(r'\s+style="[^"]*"', '', code)
-        code = re.sub(r"\s+style='[^']*'", '', code)
+        code = re.sub(r'\s+style="[^"]*"', "", code)
+        code = re.sub(r"\s+style='[^']*'", "", code)
         return code
 
     def _convert_to_react(self, code: str) -> str:
@@ -332,7 +402,9 @@ class SnippetGenerator:
         # Refinement: change button variants
         if "ghost" in change_lower or "outline" in change_lower:
             refined_code = existing_code.replace("btn-primary", "btn-outline-primary")
-            refined_code = refined_code.replace("btn-secondary", "btn-outline-secondary")
+            refined_code = refined_code.replace(
+                "btn-secondary", "btn-outline-secondary"
+            )
             return {
                 "code": refined_code,
                 "diff_summary": "Changed buttons to outline/ghost variant",
