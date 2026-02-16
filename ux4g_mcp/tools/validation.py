@@ -1,14 +1,25 @@
 """Validation tool implementation."""
+
 import json
 import re
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 from bs4 import BeautifulSoup
+
 from ..registry import get_registry
 
 
 class ValidationIssue:
     """Represents a validation issue."""
-    def __init__(self, code: str, severity: str, message: str, location: Optional[str] = None, fix_hint: Optional[str] = None):
+
+    def __init__(
+        self,
+        code: str,
+        severity: str,
+        message: str,
+        location: Optional[str] = None,
+        fix_hint: Optional[str] = None,
+    ):
         self.code = code
         self.severity = severity
         self.message = message
@@ -39,14 +50,19 @@ async def validate_snippet_tool(arguments: dict) -> str:
     framework = arguments.get("framework")
 
     if not code:
-        return json.dumps({
-            "is_valid": False,
-            "issues": [{
-                "code": "EMPTY_CODE",
-                "severity": "error",
-                "message": "No code provided for validation",
-            }],
-        }, indent=2)
+        return json.dumps(
+            {
+                "is_valid": False,
+                "issues": [
+                    {
+                        "code": "EMPTY_CODE",
+                        "severity": "error",
+                        "message": "No code provided for validation",
+                    }
+                ],
+            },
+            indent=2,
+        )
 
     # Auto-detect framework if not provided
     if not framework:
@@ -72,11 +88,13 @@ async def validate_snippet_tool(arguments: dict) -> str:
         _validate_structure(soup, registry, issues)
 
     except Exception as e:
-        issues.append(ValidationIssue(
-            code="PARSE_ERROR",
-            severity="error",
-            message=f"Failed to parse code: {str(e)}",
-        ))
+        issues.append(
+            ValidationIssue(
+                code="PARSE_ERROR",
+                severity="error",
+                message=f"Failed to parse code: {str(e)}",
+            )
+        )
 
     is_valid = len([i for i in issues if i.severity == "error"]) == 0
 
@@ -90,7 +108,12 @@ async def validate_snippet_tool(arguments: dict) -> str:
     return json.dumps(result, indent=2)
 
 
-def _validate_components(soup: BeautifulSoup, registry, issues: List[ValidationIssue], normalized_components: List[Dict]):
+def _validate_components(
+    soup: BeautifulSoup,
+    registry,
+    issues: List[ValidationIssue],
+    normalized_components: List[Dict],
+):
     """Validate component usage."""
     # Check for buttons
     buttons = soup.find_all("button")
@@ -103,26 +126,42 @@ def _validate_components(soup: BeautifulSoup, registry, issues: List[ValidationI
             # Check if btn is used without variant
             has_variant = any(c.startswith("btn-") and c != "btn" for c in classes)
             if not has_variant:
-                issues.append(ValidationIssue(
-                    code="MISSING_BUTTON_VARIANT",
-                    severity="warning",
-                    message="Button should have a variant class (e.g., btn-primary, btn-secondary)",
-                    location=f"button element",
-                    fix_hint="Add a variant class like 'btn-primary' or 'btn-outline-primary'",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        code="MISSING_BUTTON_VARIANT",
+                        severity="warning",
+                        message="Button should have a variant class (e.g., btn-primary, btn-secondary)",
+                        location=f"button element",
+                        fix_hint="Add a variant class like 'btn-primary' or 'btn-outline-primary'",
+                    )
+                )
 
-    # Check for modals
-    modals = soup.find_all(class_=re.compile(r"modal"))
+    # Check modal root elements only (avoid matching modal-dialog/modal-content).
+    modals = soup.find_all(
+        lambda tag: (
+            tag.has_attr("class")
+            and "modal"
+            in (
+                tag.get("class", [])
+                if isinstance(tag.get("class", []), list)
+                else str(tag.get("class", "")).split()
+            )
+        )
+    )
     for modal in modals:
-        normalized_components.append({"type": "modal", "classes": modal.get("class", [])})
+        normalized_components.append(
+            {"type": "modal", "classes": modal.get("class", [])}
+        )
         if not modal.get("id"):
-            issues.append(ValidationIssue(
-                code="MISSING_MODAL_ID",
-                severity="error",
-                message="Modal should have an id attribute",
-                location="modal element",
-                fix_hint="Add an id attribute to the modal element",
-            ))
+            issues.append(
+                ValidationIssue(
+                    code="MISSING_MODAL_ID",
+                    severity="error",
+                    message="Modal should have an id attribute",
+                    location="modal element",
+                    fix_hint="Add an id attribute to the modal element",
+                )
+            )
 
     # Check for forms
     form_controls = soup.find_all(["input", "select", "textarea"])
@@ -132,13 +171,15 @@ def _validate_components(soup: BeautifulSoup, registry, issues: List[ValidationI
             classes = classes.split()
         if control.name in ["input", "select", "textarea"]:
             if not any(c.startswith("form-") for c in classes):
-                issues.append(ValidationIssue(
-                    code="MISSING_FORM_CLASS",
-                    severity="warning",
-                    message=f"{control.name} should have form-control or form-select class",
-                    location=f"{control.name} element",
-                    fix_hint=f"Add 'form-control' class to {control.name}",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        code="MISSING_FORM_CLASS",
+                        severity="warning",
+                        message=f"{control.name} should have form-control or form-select class",
+                        location=f"{control.name} element",
+                        fix_hint=f"Add 'form-control' class to {control.name}",
+                    )
+                )
 
 
 def _validate_accessibility(soup: BeautifulSoup, issues: List[ValidationIssue]):
@@ -147,13 +188,15 @@ def _validate_accessibility(soup: BeautifulSoup, issues: List[ValidationIssue]):
     images = soup.find_all("img")
     for img in images:
         if not img.get("alt"):
-            issues.append(ValidationIssue(
-                code="MISSING_ALT_TEXT",
-                severity="warning",
-                message="Image should have alt attribute for accessibility",
-                location="img element",
-                fix_hint="Add alt attribute describing the image",
-            ))
+            issues.append(
+                ValidationIssue(
+                    code="MISSING_ALT_TEXT",
+                    severity="warning",
+                    message="Image should have alt attribute for accessibility",
+                    location="img element",
+                    fix_hint="Add alt attribute describing the image",
+                )
+            )
 
     # Check for form labels
     inputs = soup.find_all(["input", "select", "textarea"])
@@ -163,13 +206,15 @@ def _validate_accessibility(soup: BeautifulSoup, issues: List[ValidationIssue]):
             # Check if label exists with matching for attribute
             label = soup.find("label", {"for": inp_id})
             if not label:
-                issues.append(ValidationIssue(
-                    code="MISSING_LABEL",
-                    severity="warning",
-                    message=f"Form control with id '{inp_id}' should have an associated label",
-                    location=f"{inp.name} element",
-                    fix_hint="Add a <label> element with 'for' attribute matching the input id",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        code="MISSING_LABEL",
+                        severity="warning",
+                        message=f"Form control with id '{inp_id}' should have an associated label",
+                        location=f"{inp.name} element",
+                        fix_hint="Add a <label> element with 'for' attribute matching the input id",
+                    )
+                )
 
 
 def _validate_structure(soup: BeautifulSoup, registry, issues: List[ValidationIssue]):
@@ -183,10 +228,12 @@ def _validate_structure(soup: BeautifulSoup, registry, issues: List[ValidationIs
             if isinstance(parent_classes, str):
                 parent_classes = parent_classes.split()
             if not any(c in ["container", "container-fluid"] for c in parent_classes):
-                issues.append(ValidationIssue(
-                    code="ROW_WITHOUT_CONTAINER",
-                    severity="warning",
-                    message="Row should be inside a container or container-fluid",
-                    location="row element",
-                    fix_hint="Wrap the row in a <div class='container'> or <div class='container-fluid'>",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        code="ROW_WITHOUT_CONTAINER",
+                        severity="warning",
+                        message="Row should be inside a container or container-fluid",
+                        location="row element",
+                        fix_hint="Wrap the row in a <div class='container'> or <div class='container-fluid'>",
+                    )
+                )
