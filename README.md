@@ -85,12 +85,14 @@ Environment variables:
 
 - `UX4G_ASSET_ROOT`: Path to UX4G assets (default: `ux4g_2.0.8/`)
 - `UX4G_DEFAULT_FRAMEWORK`: Preferred framework for generated payloads (`html` or `react`, default: `html`)
+- `UX4G_FORCE_REBUILD`: Force registry rebuild and ignore cached registry (`true/false`, default: `false`)
 
 Example:
 
 ```bash
 export UX4G_ASSET_ROOT="/absolute/path/to/ux4g_2.0.8"
 export UX4G_DEFAULT_FRAMEWORK="react"
+export UX4G_FORCE_REBUILD="true"
 python -m ux4g_mcp
 ```
 

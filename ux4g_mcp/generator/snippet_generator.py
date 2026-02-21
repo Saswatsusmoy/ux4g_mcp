@@ -4,6 +4,7 @@ import re
 from typing import Dict, List, Optional
 
 from ..registry import get_registry
+from ..utils.jsx import html_to_jsx
 from .page_templates import PageTemplates
 
 
@@ -356,11 +357,7 @@ class SnippetGenerator:
 
     def _convert_to_react(self, code: str) -> str:
         """Convert HTML to React JSX."""
-        code = code.replace('class="', 'className="')
-        code = code.replace("class='", "className='")
-        code = code.replace(' for="', ' htmlFor="')
-        code = code.replace(" for='", " htmlFor='")
-        return code
+        return html_to_jsx(code)
 
     def _generate_notes(self, components: List[Dict]) -> List[str]:
         """Generate helpful notes about the generated code."""
