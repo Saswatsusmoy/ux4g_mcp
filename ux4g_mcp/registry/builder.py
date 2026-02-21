@@ -1,13 +1,21 @@
 """Build the UX4G component registry from CSS/JS parsing and curated metadata."""
 
+import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import yaml
 
-from ..config import CACHE_DIR, CSS_FILES, JS_FILES, METADATA_DIR
+from ..config import (
+    CACHE_DIR,
+    CSS_FILES,
+    FORCE_REBUILD_REGISTRY_CACHE,
+    JS_FILES,
+    METADATA_DIR,
+    UX4G_VERSION,
+)
 from .css_parser import CSSParser
 from .js_parser import JSParser
 from .models import Component, ComponentRegistry, Token, Variant
@@ -22,12 +30,16 @@ class RegistryBuilder:
         # Bump when cache shape/derivation semantics change.
         self._cache_format_version = 3
 
-    def build(self, use_cache: bool = True) -> ComponentRegistry:
+    def build(
+        self, use_cache: bool = True, force_rebuild: bool = False
+    ) -> ComponentRegistry:
         """Build the registry from CSS/JS files and metadata."""
+        source_fingerprint = self._compute_source_fingerprint()
+
         # Try to load from cache first
-        if use_cache and self._cache_file.exists():
+        if use_cache and not force_rebuild and self._cache_file.exists():
             try:
-                return self._load_from_cache()
+                return self._load_from_cache(source_fingerprint)
             except Exception:
                 pass  # Fall through to rebuild
 
@@ -45,9 +57,56 @@ class RegistryBuilder:
 
         # Save to cache
         if use_cache:
-            self._save_to_cache()
+            self._save_to_cache(source_fingerprint)
 
         return self.registry
+
+    def _tracked_source_files(self) -> list[Path]:
+        """Return source files that influence the registry contents."""
+        files = [
+            METADATA_DIR / "components.yaml",
+            *CSS_FILES.values(),
+            *JS_FILES.values(),
+        ]
+        # De-duplicate while preserving deterministic ordering by path string.
+        unique = {str(path): path for path in files}
+        return [unique[key] for key in sorted(unique)]
+
+    def _file_sha256(self, path: Path) -> str:
+        """Compute SHA-256 checksum for a source file."""
+        digest = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def _compute_source_fingerprint(self) -> dict[str, Any]:
+        """
+        Build a fingerprint from source metadata/content.
+
+        Includes cache/version metadata plus each source file's mtime, size,
+        and content hash so cache reuse is invalidated on changes.
+        """
+        sources: list[dict[str, Any]] = []
+        for path in self._tracked_source_files():
+            source_entry: dict[str, Any] = {"path": str(path)}
+            if path.exists():
+                stat = path.stat()
+                source_entry["mtime_ns"] = stat.st_mtime_ns
+                source_entry["size"] = stat.st_size
+                source_entry["sha256"] = self._file_sha256(path)
+            else:
+                source_entry["missing"] = True
+            sources.append(source_entry)
+
+        fingerprint = {
+            "cache_format_version": self._cache_format_version,
+            "ux4g_version": UX4G_VERSION,
+            "sources": sources,
+        }
+        canonical = json.dumps(fingerprint, sort_keys=True, separators=(",", ":"))
+        fingerprint["digest"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        return fingerprint
 
     def _load_metadata(self):
         """Load curated component metadata from YAML/JSON files."""
@@ -236,10 +295,11 @@ class RegistryBuilder:
         with open(metadata_file, "w", encoding="utf-8") as f:
             yaml.dump(default_components, f, default_flow_style=False)
 
-    def _save_to_cache(self):
+    def _save_to_cache(self, source_fingerprint: dict[str, Any]):
         """Save registry to cache file."""
         cache_data = {
             "cache_format_version": self._cache_format_version,
+            "source_fingerprint": source_fingerprint,
             "version": self.registry.version,
             "components": {
                 comp_id: self._component_to_dict(comp)
@@ -258,13 +318,22 @@ class RegistryBuilder:
         with open(self._cache_file, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, indent=2)
 
-    def _load_from_cache(self) -> ComponentRegistry:
+    def _load_from_cache(
+        self, expected_source_fingerprint: dict[str, Any]
+    ) -> ComponentRegistry:
         """Load registry from cache file."""
         with open(self._cache_file, "r", encoding="utf-8") as f:
             cache_data = json.load(f)
 
         if cache_data.get("cache_format_version") != self._cache_format_version:
             raise ValueError("Registry cache format/version mismatch")
+        cached_fingerprint = cache_data.get("source_fingerprint")
+        if not isinstance(cached_fingerprint, dict):
+            raise ValueError("Registry source fingerprint missing")
+        if cached_fingerprint.get("digest") != expected_source_fingerprint.get(
+            "digest"
+        ):
+            raise ValueError("Registry source fingerprint mismatch")
 
         registry = ComponentRegistry(version=cache_data.get("version", "2.0.8"))
 
@@ -343,10 +412,18 @@ class RegistryBuilder:
 _registry_instance: Optional[ComponentRegistry] = None
 
 
-def get_registry() -> ComponentRegistry:
+def get_registry(
+    use_cache: bool = True, force_rebuild: bool | None = None
+) -> ComponentRegistry:
     """Get or build the global registry instance."""
     global _registry_instance
-    if _registry_instance is None:
+    effective_force_rebuild = (
+        FORCE_REBUILD_REGISTRY_CACHE if force_rebuild is None else force_rebuild
+    )
+    if _registry_instance is None or effective_force_rebuild:
         builder = RegistryBuilder()
-        _registry_instance = builder.build()
+        _registry_instance = builder.build(
+            use_cache=use_cache,
+            force_rebuild=effective_force_rebuild,
+        )
     return _registry_instance

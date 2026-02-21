@@ -1,11 +1,15 @@
 """Data models for UX4G components and tokens."""
+
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Set, Literal
+from typing import Dict, List, Literal, Optional, Set
+
+from ..utils.jsx import html_to_jsx
 
 
 @dataclass
 class Variant:
     """Component variant definition with optional direct snippets."""
+
     name: str
     class_list: List[str]
     additional_attributes: Dict[str, str] = field(default_factory=dict)
@@ -17,6 +21,7 @@ class Variant:
 @dataclass
 class Component:
     """UX4G component definition."""
+
     id: str
     name: str
     category: str
@@ -38,8 +43,11 @@ class Component:
 @dataclass
 class Token:
     """Design token definition."""
+
     name: str
-    token_type: Literal["color", "spacing", "typography", "breakpoint", "radius", "other"]
+    token_type: Literal[
+        "color", "spacing", "typography", "breakpoint", "radius", "other"
+    ]
     value: str
     css_variable: Optional[str] = None
     css_class: Optional[str] = None
@@ -50,6 +58,7 @@ class Token:
 @dataclass
 class ComponentRegistry:
     """Main registry holding all components and tokens."""
+
     components: Dict[str, Component] = field(default_factory=dict)
     tokens: Dict[str, Token] = field(default_factory=dict)
     version: str = "2.0.8"
@@ -136,9 +145,6 @@ class ComponentRegistry:
                     markup = markup.replace('class="', f'class="{variant_classes} ', 1)
 
         if framework == "react":
-            markup = markup.replace('class="', 'className="')
-            markup = markup.replace("class='", "className='")
-            markup = markup.replace(' for="', ' htmlFor="')
-            markup = markup.replace(" for='", " htmlFor='")
+            markup = html_to_jsx(markup)
 
         return markup.strip()
