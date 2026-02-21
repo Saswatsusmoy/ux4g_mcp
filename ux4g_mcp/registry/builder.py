@@ -1,14 +1,16 @@
 """Build the UX4G component registry from CSS/JS parsing and curated metadata."""
+
 import json
 import re
-import yaml
 from pathlib import Path
 from typing import Dict, Optional
 
-from .models import Component, Variant, Token, ComponentRegistry
+import yaml
+
+from ..config import CACHE_DIR, CSS_FILES, JS_FILES, METADATA_DIR
 from .css_parser import CSSParser
 from .js_parser import JSParser
-from ..config import CSS_FILES, JS_FILES, METADATA_DIR, CACHE_DIR
+from .models import Component, ComponentRegistry, Token, Variant
 
 
 class RegistryBuilder:
@@ -17,6 +19,8 @@ class RegistryBuilder:
     def __init__(self):
         self.registry = ComponentRegistry()
         self._cache_file = CACHE_DIR / "registry_cache.json"
+        # Bump when cache shape/derivation semantics change.
+        self._cache_format_version = 3
 
     def build(self, use_cache: bool = True) -> ComponentRegistry:
         """Build the registry from CSS/JS files and metadata."""
@@ -111,7 +115,9 @@ class RegistryBuilder:
                 # Merge discovered classes with existing
                 existing_classes = set(component.required_classes)
                 discovered_classes = set(all_classes[comp_id])
-                component.required_classes = sorted(list(existing_classes | discovered_classes))
+                component.required_classes = sorted(
+                    list(existing_classes | discovered_classes)
+                )
 
     def _parse_js_files(self):
         """Parse JS files and update component JS requirements."""
@@ -233,6 +239,7 @@ class RegistryBuilder:
     def _save_to_cache(self):
         """Save registry to cache file."""
         cache_data = {
+            "cache_format_version": self._cache_format_version,
             "version": self.registry.version,
             "components": {
                 comp_id: self._component_to_dict(comp)
@@ -255,6 +262,9 @@ class RegistryBuilder:
         """Load registry from cache file."""
         with open(self._cache_file, "r", encoding="utf-8") as f:
             cache_data = json.load(f)
+
+        if cache_data.get("cache_format_version") != self._cache_format_version:
+            raise ValueError("Registry cache format/version mismatch")
 
         registry = ComponentRegistry(version=cache_data.get("version", "2.0.8"))
 
