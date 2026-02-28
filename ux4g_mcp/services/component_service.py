@@ -1,6 +1,9 @@
 """Component service for structured listing and component code retrieval."""
+
 import re
 from typing import Any
+
+import tinycss2
 
 from ..config import CSS_FILES, JS_FILES
 from ..registry import get_registry
@@ -107,24 +110,53 @@ class ComponentService:
         for variant in comp.variants:
             selectors.update(variant.class_list)
 
-        patterns = [re.compile(rf"\.{re.escape(s)}(?:[\s\.:#\[,{{]|$)") for s in selectors if s]
+        patterns = [
+            re.compile(rf"\.{re.escape(s)}(?:[\s\.:#\[,{{]|$)") for s in selectors if s
+        ]
         matched_rules: list[str] = []
 
         for css_file in CSS_FILES.values():
             if not css_file.exists():
                 continue
             content = css_file.read_text(encoding="utf-8", errors="ignore")
-            blocks = content.split("}")
-            for block in blocks:
-                candidate = block.strip()
-                if not candidate or "{" not in candidate:
-                    continue
-                if any(p.search(candidate) for p in patterns):
-                    matched_rules.append(candidate + "}\n")
+            stylesheet = tinycss2.parse_stylesheet(
+                content, skip_comments=True, skip_whitespace=True
+            )
+            matched_rules.extend(
+                self._collect_matching_css_blocks(stylesheet, patterns)
+            )
 
         # De-duplicate while preserving order
         deduped = list(dict.fromkeys(matched_rules))
         return "".join(deduped).strip()
+
+    def _collect_matching_css_blocks(
+        self, rules: list, patterns: list[re.Pattern]
+    ) -> list[str]:
+        """Collect matching rules recursively, preserving nested at-rule context."""
+        matched: list[str] = []
+        for rule in rules:
+            if rule.type == "qualified-rule":
+                selector = tinycss2.serialize(rule.prelude).strip()
+                if selector and any(pattern.search(selector) for pattern in patterns):
+                    matched.append(tinycss2.serialize([rule]).strip() + "\n")
+            elif rule.type == "at-rule" and rule.content is not None:
+                nested_rules = tinycss2.parse_rule_list(
+                    rule.content, skip_comments=True, skip_whitespace=True
+                )
+                nested_matches = self._collect_matching_css_blocks(
+                    nested_rules, patterns
+                )
+                if not nested_matches:
+                    continue
+
+                prelude = tinycss2.serialize(rule.prelude).strip()
+                header = f"@{rule.lower_at_keyword}"
+                if prelude:
+                    header += f" {prelude}"
+                nested_body = "".join(nested_matches).rstrip()
+                matched.append(f"{header} {{\n{nested_body}\n}}\n")
+        return matched
 
     def _collect_component_js(self, component_id: str) -> str:
         comp = self.registry.get_component(component_id)
@@ -139,7 +171,9 @@ class ComponentService:
         # Pull constructor/static references from key JS files where possible.
         constructor_names = []
         if comp.js_initialization:
-            constructor_names.extend(re.findall(r"new\s+([A-Za-z0-9_]+)", comp.js_initialization))
+            constructor_names.extend(
+                re.findall(r"new\s+([A-Za-z0-9_]+)", comp.js_initialization)
+            )
 
         for js_file in JS_FILES.values():
             if not js_file.exists():

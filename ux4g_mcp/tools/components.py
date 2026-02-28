@@ -1,6 +1,8 @@
 """Component-oriented MCP tools."""
+
 import json
 
+from ..config import DEFAULT_FRAMEWORK
 from ..services import ComponentService
 
 
@@ -22,7 +24,7 @@ async def use_component_tool(arguments: dict) -> str:
     Expects `component_ids` as a list populated by the agent after `list_components`.
     """
     component_ids = arguments.get("component_ids") or []
-    framework = arguments.get("framework", "html")
+    framework = arguments.get("framework") or DEFAULT_FRAMEWORK
     include_css = arguments.get("include_css", True)
     include_js = arguments.get("include_js", True)
 

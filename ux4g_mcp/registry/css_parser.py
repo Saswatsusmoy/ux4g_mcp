@@ -1,7 +1,9 @@
 """CSS parser for extracting UX4G classes and design tokens."""
+
 import re
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, Iterable, List, Tuple
+
 import tinycss2
 
 
@@ -14,35 +16,64 @@ class CSSParser:
         self.tokens: Dict[str, Dict[str, str]] = {}  # token_type -> {name: value}
         self.css_variables: Dict[str, str] = {}  # var_name -> value
 
-    def parse(self) -> Tuple[Dict[str, List[str]], Dict[str, Dict[str, str]], Dict[str, str]]:
+    def parse(
+        self,
+    ) -> Tuple[Dict[str, List[str]], Dict[str, Dict[str, str]], Dict[str, str]]:
         """Parse CSS file and return classes, tokens, and CSS variables."""
         if not self.css_file.exists():
             return {}, {}, {}
 
         content = self.css_file.read_text(encoding="utf-8")
+        stylesheet = tinycss2.parse_stylesheet(
+            content, skip_comments=True, skip_whitespace=True
+        )
 
-        # Extract CSS variables from :root
-        self._extract_css_variables(content)
+        # Extract CSS variables from all :root blocks in the stylesheet.
+        self._extract_css_variables(stylesheet)
 
         # Extract component classes
         self._extract_component_classes(content)
 
         # Extract design tokens
-        self._extract_tokens(content)
+        self._extract_tokens(stylesheet)
 
         return self.classes, self.tokens, self.css_variables
 
-    def _extract_css_variables(self, content: str):
-        """Extract CSS custom properties from :root."""
-        # Match :root { --var-name: value; }
-        root_pattern = r":root\s*\{([^}]+)\}"
-        root_match = re.search(root_pattern, content, re.DOTALL)
-        if root_match:
-            root_content = root_match.group(1)
-            var_pattern = r"--([\w-]+):\s*([^;]+);"
-            for match in re.finditer(var_pattern, root_content):
-                var_name = match.group(1)
-                var_value = match.group(2).strip()
+    def _iter_qualified_rules(self, rules: Iterable) -> Iterable:
+        """Yield all qualified rules, recursively traversing nested at-rules."""
+        for rule in rules:
+            if rule.type == "qualified-rule":
+                yield rule
+            elif rule.type == "at-rule" and rule.content is not None:
+                nested = tinycss2.parse_rule_list(
+                    rule.content, skip_comments=True, skip_whitespace=True
+                )
+                yield from self._iter_qualified_rules(nested)
+
+    def _rule_declarations(self, rule) -> list:
+        """Return parsed declaration nodes for a qualified rule."""
+        return [
+            declaration
+            for declaration in tinycss2.parse_declaration_list(
+                rule.content, skip_comments=True, skip_whitespace=True
+            )
+            if declaration.type == "declaration"
+        ]
+
+    def _extract_css_variables(self, stylesheet) -> None:
+        """Extract CSS custom properties from all :root selectors."""
+        for rule in self._iter_qualified_rules(stylesheet):
+            selector = tinycss2.serialize(rule.prelude).strip()
+            if not selector:
+                continue
+            selectors = [s.strip() for s in selector.split(",")]
+            if not any(":root" in s for s in selectors):
+                continue
+            for declaration in self._rule_declarations(rule):
+                if not declaration.name.startswith("--"):
+                    continue
+                var_name = declaration.name[2:]
+                var_value = tinycss2.serialize(declaration.value).strip()
                 self.css_variables[var_name] = var_value
 
     def _extract_component_classes(self, content: str):
@@ -107,35 +138,168 @@ class CSSParser:
                     self.classes[util_type] = []
                 self.classes[util_type].extend(sorted(list(classes)))
 
-    def _extract_tokens(self, content: str):
+    def _extract_spacing_tokens_from_utilities(self, stylesheet) -> Dict[str, str]:
+        """Extract spacing token values from utility class rules."""
+        spacing_selector_pattern = re.compile(
+            r"\.(?:m|p|mx|my|mt|mb|ml|mr|ms|me|px|py|pt|pb|pl|pr|ps|pe|g|gap)-[A-Za-z0-9_-]+"
+        )
+        spacing_properties = {
+            "margin",
+            "margin-top",
+            "margin-right",
+            "margin-bottom",
+            "margin-left",
+            "padding",
+            "padding-top",
+            "padding-right",
+            "padding-bottom",
+            "padding-left",
+            "gap",
+            "row-gap",
+            "column-gap",
+        }
+
+        spacing_tokens: Dict[str, str] = {}
+        for rule in self._iter_qualified_rules(stylesheet):
+            selector = tinycss2.serialize(rule.prelude).strip()
+            if not selector or not spacing_selector_pattern.search(selector):
+                continue
+
+            class_names = {
+                match.lstrip(".")
+                for match in spacing_selector_pattern.findall(selector)
+            }
+            if not class_names:
+                continue
+
+            values: list[str] = []
+            for declaration in self._rule_declarations(rule):
+                if declaration.name not in spacing_properties:
+                    continue
+                value = tinycss2.serialize(declaration.value).strip()
+                if value:
+                    values.append(f"{declaration.name}: {value}")
+
+            if not values:
+                continue
+
+            compact_value = "; ".join(values)
+            for class_name in class_names:
+                spacing_tokens[class_name] = compact_value
+
+        return spacing_tokens
+
+    def _extract_typography_tokens_from_utilities(self, stylesheet) -> Dict[str, str]:
+        """Extract typography token values from utility class rules."""
+        typography_selector_pattern = re.compile(r"\.(?:fs|fw|lh)-[A-Za-z0-9_-]+")
+        typography_properties = {
+            "font-family",
+            "font-size",
+            "font-weight",
+            "line-height",
+            "letter-spacing",
+        }
+
+        typography_tokens: Dict[str, str] = {}
+        for rule in self._iter_qualified_rules(stylesheet):
+            selector = tinycss2.serialize(rule.prelude).strip()
+            if not selector or not typography_selector_pattern.search(selector):
+                continue
+
+            class_names = {
+                match.lstrip(".")
+                for match in typography_selector_pattern.findall(selector)
+            }
+            if not class_names:
+                continue
+
+            values: list[str] = []
+            for declaration in self._rule_declarations(rule):
+                if declaration.name not in typography_properties:
+                    continue
+                value = tinycss2.serialize(declaration.value).strip()
+                if value:
+                    values.append(f"{declaration.name}: {value}")
+
+            if not values:
+                continue
+
+            compact_value = "; ".join(values)
+            for class_name in class_names:
+                typography_tokens[class_name] = compact_value
+
+        return typography_tokens
+
+    def _extract_tokens(self, stylesheet) -> None:
         """Extract design tokens from CSS variables."""
         # Colors
         color_vars = {
-            k: v for k, v in self.css_variables.items()
-            if any(x in k.lower() for x in ["color", "primary", "secondary", "success", "danger", "warning", "info", "blue", "red", "green", "yellow"])
+            k: v
+            for k, v in self.css_variables.items()
+            if any(
+                x in k.lower()
+                for x in [
+                    "color",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "danger",
+                    "warning",
+                    "info",
+                    "blue",
+                    "red",
+                    "green",
+                    "yellow",
+                    "black",
+                    "white",
+                    "gray",
+                    "grey",
+                ]
+            )
         }
         if color_vars:
             self.tokens["color"] = color_vars
 
-        # Spacing (from variables or utility classes)
+        def is_spacing_variable(var_name: str) -> bool:
+            name = var_name.lower()
+            if any(
+                key in name for key in ["spacing", "spacer", "gap", "margin", "padding"]
+            ):
+                return True
+            return re.search(r"(^|[-_])space([-_]|$)", name) is not None
+
+        # Spacing tokens from variables plus utility classes.
         spacing_vars = {
-            k: v for k, v in self.css_variables.items()
-            if "spacing" in k.lower() or "gap" in k.lower()
+            k: v for k, v in self.css_variables.items() if is_spacing_variable(k)
         }
+        spacing_vars.update(self._extract_spacing_tokens_from_utilities(stylesheet))
         if spacing_vars:
             self.tokens["spacing"] = spacing_vars
 
-        # Typography
+        # Typography tokens from variables plus typography utility classes.
         typo_vars = {
-            k: v for k, v in self.css_variables.items()
-            if any(x in k.lower() for x in ["font", "line-height", "size", "weight"])
+            k: v
+            for k, v in self.css_variables.items()
+            if any(
+                x in k.lower()
+                for x in [
+                    "font",
+                    "line-height",
+                    "letter-spacing",
+                    "typography",
+                    "weight",
+                    "size",
+                ]
+            )
         }
+        typo_vars.update(self._extract_typography_tokens_from_utilities(stylesheet))
         if typo_vars:
             self.tokens["typography"] = typo_vars
 
         # Border radius
         radius_vars = {
-            k: v for k, v in self.css_variables.items()
+            k: v
+            for k, v in self.css_variables.items()
             if "radius" in k.lower() or "border-radius" in k.lower()
         }
         if radius_vars:

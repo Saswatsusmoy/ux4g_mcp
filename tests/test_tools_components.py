@@ -1,6 +1,7 @@
 import asyncio
 import json
 
+import ux4g_mcp.tools.components as components_tools
 from ux4g_mcp.tools.components import list_components_tool, use_component_tool
 
 
@@ -30,3 +31,15 @@ def test_use_component_tool_returns_payload():
     assert "code" in component
     assert "preferred" in component["code"]
     assert "className=" in component["code"]["preferred"]
+
+
+def test_use_component_tool_uses_default_framework_when_omitted(monkeypatch):
+    monkeypatch.setattr(components_tools, "DEFAULT_FRAMEWORK", "react")
+
+    result = asyncio.run(
+        components_tools.use_component_tool({"component_ids": ["button"]})
+    )
+    data = json.loads(result)
+
+    assert data["resolved_count"] == 1
+    assert "className=" in data["components"][0]["code"]["preferred"]

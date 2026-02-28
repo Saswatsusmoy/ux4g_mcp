@@ -31,7 +31,7 @@ ux4g_mcp/
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.10+
 - UX4G assets available locally (default: `ux4g_2.0.8/`)
 - Dependencies from `requirements.txt`
 
@@ -65,7 +65,16 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-### MCP Tools
+### Test Types
+
+- Tool contract tests: validate MCP tool payload shapes and default behavior (`tests/test_tools_components.py`, `tests/test_tools_additional.py`)
+- Service-layer tests: validate component service behavior, including CSS/JS asset extraction (`tests/test_component_service.py`)
+- Parser tests: validate CSS and JS parsing logic for classes/tokens/component metadata (`tests/test_css_parser.py`, `tests/test_js_parser.py`)
+- Validation-rule tests: verify snippet validation outcomes and issue reporting (`tests/test_validation.py`)
+- Conversion tests: verify HTML-to-JSX conversion behavior for generated/component snippets (`tests/test_react_conversion.py`)
+- Cache/regression tests: verify registry cache fingerprint invalidation and force rebuild behavior (`tests/test_registry_cache.py`)
+- Entrypoint smoke tests: verify module entrypoint wiring (`tests/test_entrypoint.py`)
+
 ## Exposed MCP Tools
 
 The server currently advertises the following tools:
