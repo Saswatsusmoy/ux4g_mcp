@@ -1,6 +1,7 @@
 import asyncio
 import json
 
+import ux4g_mcp.tools.generation as generation_tools
 from ux4g_mcp.tools.best_practices import get_bestpractices_tool
 from ux4g_mcp.tools.generation import generate_snippet_tool, refine_snippet_tool
 from ux4g_mcp.tools.tokens import list_tokens_tool
@@ -83,3 +84,40 @@ def test_refine_snippet_tool_shape():
     assert "code" in data
     assert "diff_summary" in data
     assert "btn-outline-primary" in data["code"]
+
+
+def test_generate_snippet_tool_uses_default_framework_when_omitted(monkeypatch):
+    monkeypatch.setattr(generation_tools, "DEFAULT_FRAMEWORK", "react")
+
+    result = asyncio.run(
+        generation_tools.generate_snippet_tool({"description": "primary button"})
+    )
+    data = json.loads(result)
+
+    assert "className=" in data["code"]
+
+
+def test_refine_snippet_tool_uses_default_framework_when_omitted(monkeypatch):
+    monkeypatch.setattr(generation_tools, "DEFAULT_FRAMEWORK", "react")
+    captured = {}
+
+    def fake_refine(self, existing_code, change_request, framework=None):
+        captured["framework"] = framework
+        return {
+            "code": existing_code,
+            "diff_summary": "noop",
+            "dependencies": [],
+        }
+
+    monkeypatch.setattr(generation_tools.SnippetGenerator, "refine", fake_refine)
+
+    asyncio.run(
+        generation_tools.refine_snippet_tool(
+            {
+                "existing_code": "<div></div>",
+                "change_request": "noop",
+            }
+        )
+    )
+
+    assert captured["framework"] == "react"

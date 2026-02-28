@@ -1,12 +1,15 @@
 """Code generation tool implementations."""
+
 import json
+
+from ..config import DEFAULT_FRAMEWORK
 from ..generator import SnippetGenerator
 
 
 async def generate_snippet_tool(arguments: dict) -> str:
     """Generate UX4G-compliant code from natural language description."""
     description = arguments.get("description", "")
-    framework = arguments.get("framework", "html")
+    framework = arguments.get("framework") or DEFAULT_FRAMEWORK
     page_context = arguments.get("page_context")
     validation_level = arguments.get("validation_level", "relaxed")
 
@@ -28,12 +31,12 @@ async def refine_snippet_tool(arguments: dict) -> str:
     """Refine existing UX4G code based on natural language change request."""
     existing_code = arguments.get("existing_code", "")
     change_request = arguments.get("change_request", "")
-    framework = arguments.get("framework")
+    framework = arguments.get("framework") or DEFAULT_FRAMEWORK
 
     if not existing_code or not change_request:
-        return json.dumps({
-            "error": "existing_code and change_request are required"
-        }, indent=2)
+        return json.dumps(
+            {"error": "existing_code and change_request are required"}, indent=2
+        )
 
     generator = SnippetGenerator()
     result = generator.refine(

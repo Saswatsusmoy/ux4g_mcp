@@ -31,7 +31,7 @@ ux4g_mcp/
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.10+
 - UX4G assets available locally (default: `ux4g_2.0.8/`)
 - Dependencies from `requirements.txt`
 

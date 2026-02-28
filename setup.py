@@ -17,7 +17,7 @@ setup(
         "html5lib>=1.1",
         "lxml>=5.0.0",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.10",
     entry_points={
         "console_scripts": [
             "ux4g-mcp=ux4g_mcp.__main__:main",
