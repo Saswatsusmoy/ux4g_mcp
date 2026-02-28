@@ -75,7 +75,6 @@ pytest
 - Cache/regression tests: verify registry cache fingerprint invalidation and force rebuild behavior (`tests/test_registry_cache.py`)
 - Entrypoint smoke tests: verify module entrypoint wiring (`tests/test_entrypoint.py`)
 
-### MCP Tools
 ## Exposed MCP Tools
 
 The server currently advertises the following tools:
